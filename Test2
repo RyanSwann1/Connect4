@@ -1,0 +1,47 @@
+#pragma once
+class Player
+{
+public:
+	Player();
+	~Player();
+
+	void movement(SDL_Event e);
+private:
+};
+
+
+
+#include "Player.h"
+#include <iostream>
+
+#include <SDL.h>
+
+
+Player::Player()
+{
+}
+
+
+Player::~Player()
+{
+}
+
+void Player::movement(SDL_Event e)
+{
+	switch (e.key.keysym.sym)
+	{
+	case SDLK_d:
+		std::cout << "Right";
+		break;
+
+	case SDLK_a:
+		std::cout << "Left";
+		break;
+
+	default:
+		std::cout << "No input.";
+		break;
+	}
+}
+
+
