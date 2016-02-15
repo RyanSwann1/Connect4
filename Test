@@ -1,0 +1,188 @@
+
+//Using SDL and standard IO
+#include <SDL.h>
+
+#include <stdio.h>
+#include "Player.h"
+
+#include <iostream>
+
+//Subsystem - self contained system within a larger system
+
+
+//https://www.reddit.com/r/gamedev/comments/2100vk/from_c_and_beyond_a_question_about_how_to_progress/
+
+
+
+enum KeyPressSurfaces
+{
+	KEY_PRESS_DEFAULT_SURFACE,
+	KEY_PRESS_RIGHT_SURFACE,
+	KEY_PRESS_LEFT_SURFACE,
+	KEY_PRESS_TOTAL_SURFACE
+};
+
+//Screen resolution
+const int SCREEN_WIDTH = 1600;
+const int SCREEN_HEIGHT = 800;
+
+//Set up the window
+SDL_Window* gWindow = nullptr;
+
+//Set up the window's surface
+SDL_Surface* gWindowSurface = nullptr;
+
+SDL_Surface* gCurrentSurface = nullptr;
+
+SDL_Surface* KeyPressSurfaces[KEY_PRESS_TOTAL_SURFACE]; //Holds all possible surfaces
+
+//Initialize SDL
+bool init()
+{
+	bool success = true;
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	{
+		printf("Video has failed to initialize.\n", SDL_GetError());
+	}
+	else
+	{
+		//create the window
+		gWindow = SDL_CreateWindow("My Program", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		if (gWindow == nullptr)
+		{
+			printf("Window has failed to create.\n", SDL_GetError());
+		}
+		else
+		{
+			gWindowSurface = SDL_GetWindowSurface(gWindow);
+		}
+	}
+	return success;
+
+}
+
+SDL_Surface* loadSurface(std::string path)
+{
+	SDL_Surface* optimizedSurface = nullptr;
+	SDL_Surface* loadedSurface = SDL_LoadBMP(path.c_str());
+	if (loadedSurface == nullptr)
+	{
+		printf("Failed to load image.\n", path.c_str(), SDL_GetError());
+	}
+	else
+	{
+		optimizedSurface = SDL_ConvertSurface(loadedSurface, gWindowSurface->format, 0);
+		if (optimizedSurface == nullptr)
+		{
+			printf("Image failed to optimize.\n", SDL_GetError());
+		}
+	}
+	loadedSurface = nullptr;
+	return optimizedSurface;
+}
+
+//Loads all of the programs media
+bool loadMedia()
+{
+	bool success = true;
+	KeyPressSurfaces[KEY_PRESS_DEFAULT_SURFACE] = loadSurface("durotar.bmp");
+	if (KeyPressSurfaces[KEY_PRESS_DEFAULT_SURFACE] == nullptr)
+	{
+		printf("Failed to load 'WorldofWarcraft.bmp.'.\n", SDL_GetError());
+		success = false;
+	}
+
+	KeyPressSurfaces[KEY_PRESS_RIGHT_SURFACE] = loadSurface("Orgrimmar.bmp");
+	if (KeyPressSurfaces[KEY_PRESS_RIGHT_SURFACE] == nullptr)
+	{
+		printf("Failed to load 'durotar.bmp'.\n", SDL_GetError());
+		success = false;
+	}
+
+	KeyPressSurfaces[KEY_PRESS_LEFT_SURFACE] = loadSurface("Untitled.bmp");
+	if (KeyPressSurfaces[KEY_PRESS_LEFT_SURFACE] == nullptr)
+	{
+		printf("Failed to load 'orgrimmar.bmp'.\n", SDL_GetError());
+		success = false;
+	}
+
+	return success;
+}
+
+//Handles the exiting of the application
+void quit()
+{
+	SDL_DestroyWindow(gWindow);
+	gWindow = nullptr;
+
+	SDL_FreeSurface(gCurrentSurface);
+	gCurrentSurface = nullptr;
+
+	SDL_Quit();
+}
+
+int main(int argc, char* args[])
+{
+	if (!init())
+	{
+		printf("Failed to initialize.\n", SDL_GetError());
+	}
+	else
+	{
+		if (!loadMedia())
+		{
+			printf("Failed to load media.\n", SDL_GetError());
+		}
+		else
+		{
+			bool quit = false;
+			SDL_Event e; //Event system
+
+			gCurrentSurface = KeyPressSurfaces[KEY_PRESS_DEFAULT_SURFACE];
+	
+			//Adjust rect to fill the screen
+			SDL_Rect stretchRect;
+			stretchRect.x = 0;
+			stretchRect.y = 0;
+			stretchRect.h = SCREEN_HEIGHT;
+			stretchRect.w = SCREEN_WIDTH;
+
+			//Game loop
+			while (!quit)
+			{
+				while (SDL_PollEvent(&e) != 0)
+				{
+					if (e.type == SDL_QUIT)
+					{
+						quit = true;
+					}
+					else if (e.type == SDL_KEYDOWN)
+					{
+						switch (e.key.keysym.sym)
+						{
+						case SDLK_d:
+							gCurrentSurface = KeyPressSurfaces[KEY_PRESS_RIGHT_SURFACE];
+							break;
+
+						case SDLK_a:
+							gCurrentSurface = KeyPressSurfaces[KEY_PRESS_LEFT_SURFACE];
+							break;
+
+						default:
+							gCurrentSurface = KeyPressSurfaces[KEY_PRESS_DEFAULT_SURFACE];
+							break;
+						}
+					}
+				}
+
+				SDL_BlitScaled(gCurrentSurface, nullptr, gWindowSurface, &stretchRect);
+				//SDL_BlitSurface(gCurrentSurface, nullptr, gWindowSurface, nullptr);
+				SDL_UpdateWindowSurface(gWindow);
+			}
+		}
+	}
+
+	SDL_Delay(4000);
+	quit();
+	return 0;
+}
